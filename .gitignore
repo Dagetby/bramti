@@ -1,0 +1,15 @@
+# JetBrains files
+.project
+.idea
+*.iml
+cover.out
+.go-cache/
+
+# Vendor
+/vendor/
+/config/result_*
+/var/dump/
+
+node_modules/
+*.js.map
+*.DS_Store
