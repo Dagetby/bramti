@@ -1,0 +1,28 @@
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    twits: [Twit!]
+}
+
+type Twit {
+    id: ID!
+    contentText: String!
+    publicationDate: Timestamp!
+    authorId: Int!
+}
+
+input NewTwit {
+    contextText: String!
+    userId: ID!
+}
+
+type Mutation {
+    createTwit(input: NewTwit!): Twit!
+}
+
+type Query {
+    Twits: [Twit!]
+}
+
+scalar Timestamp
