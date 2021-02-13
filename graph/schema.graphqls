@@ -1,15 +1,18 @@
 type User {
     id: ID!
     name: String!
-    email: String!
     twits: [Twit!]
 }
 
 type Twit {
     id: ID!
     contentText: String!
-    publicationDate: Timestamp!
-    authorId: Int!
+    publicationDate: Time!
+    authorId: User!
+}
+
+type Subscription {
+    twitPublished(id: ID!): Twit!
 }
 
 input NewTwit {
@@ -22,7 +25,7 @@ type Mutation {
 }
 
 type Query {
-    Twits: [Twit!]
+    twits(id: ID!, limit: Int = 10, offset: Int = 0): [Twit!]
 }
 
-scalar Timestamp
+scalar Time
