@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/Dagetby/bramti/graph/model"
 	"github.com/pkg/errors"
 	"io"
 	"strconv"
@@ -11,10 +10,10 @@ import (
 )
 
 type Twit struct {
-	ID              int         `json:"id"`
-	ContentText     string      `json:"contentText"`
-	PublicationDate time.Time   `json:"publicationDate"`
-	AuthorID        *model.User `json:"authorId"`
+	ID              int       `json:"id"`
+	ContentText     string    `json:"contentText"`
+	PublicationDate time.Time `json:"publicationDate"`
+	AuthorID        int       `json:"authorId"`
 }
 
 // Объявим базовый тип int для ID
