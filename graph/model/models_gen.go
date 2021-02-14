@@ -15,7 +15,7 @@ type Twit struct {
 	ID              string    `json:"id"`
 	ContentText     string    `json:"contentText"`
 	PublicationDate time.Time `json:"publicationDate"`
-	AuthorID        *User     `json:"authorId"`
+	Author          *User     `json:"author"`
 }
 
 type User struct {

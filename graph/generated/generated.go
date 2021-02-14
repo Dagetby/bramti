@@ -58,7 +58,7 @@ type ComplexityRoot struct {
 	}
 
 	Twit struct {
-		AuthorID        func(childComplexity int) int
+		Author          func(childComplexity int) int
 		ContentText     func(childComplexity int) int
 		ID              func(childComplexity int) int
 		PublicationDate func(childComplexity int) int
@@ -132,12 +132,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Subscription.TwitPublished(childComplexity, args["id"].(string)), true
 
-	case "Twit.authorId":
-		if e.complexity.Twit.AuthorID == nil {
+	case "Twit.author":
+		if e.complexity.Twit.Author == nil {
 			break
 		}
 
-		return e.complexity.Twit.AuthorID(childComplexity), true
+		return e.complexity.Twit.Author(childComplexity), true
 
 	case "Twit.contentText":
 		if e.complexity.Twit.ContentText == nil {
@@ -272,7 +272,7 @@ type Twit {
     id: ID!
     contentText: String!
     publicationDate: Time!
-    authorId: User!
+    author: User!
 }
 
 type Subscription {
@@ -726,7 +726,7 @@ func (ec *executionContext) _Twit_publicationDate(ctx context.Context, field gra
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Twit_authorId(ctx context.Context, field graphql.CollectedField, obj *model.Twit) (ret graphql.Marshaler) {
+func (ec *executionContext) _Twit_author(ctx context.Context, field graphql.CollectedField, obj *model.Twit) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -744,7 +744,7 @@ func (ec *executionContext) _Twit_authorId(ctx context.Context, field graphql.Co
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.AuthorID, nil
+		return obj.Author, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2104,8 +2104,8 @@ func (ec *executionContext) _Twit(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "authorId":
-			out.Values[i] = ec._Twit_authorId(ctx, field, obj)
+		case "author":
+			out.Values[i] = ec._Twit_author(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
