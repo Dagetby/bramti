@@ -5,7 +5,9 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/Dagetby/bramti/graph/generated"
@@ -16,21 +18,21 @@ func (r *mutationResolver) CreateTwit(ctx context.Context, input model.NewTwit) 
 	if _, ok := users[input.UserID]; !ok {
 		newUser := &model.User{
 			ID:   input.UserID,
-			Name: string(rand.Int()),
+			Name: RandStringRunes(7),
 		}
 		users[input.UserID] = newUser
 	}
 	user := users[input.UserID]
 	newTwit := &model.Twit{
+		ID:              RandStringRunes(5),
 		ContentText:     input.ContextText,
 		PublicationDate: time.Now(),
-		AuthorID:        user,
+		Author:          user,
 	}
 
 	user.Twits = append(user.Twits, newTwit)
-
-	for _, observer := range twitPublishedChannel {
-		observer <- newTwit
+	if m, ok := manager[input.UserID]; ok {
+		m.twitChannel <- newTwit
 	}
 
 	return newTwit, nil
@@ -57,13 +59,27 @@ func (r *queryResolver) Twits(ctx context.Context, id string, limit *int, offset
 }
 
 func (r *subscriptionResolver) TwitPublished(ctx context.Context, id string) (<-chan *model.Twit, error) {
+	result := make(chan *model.Twit, 1)
+	mu := &sync.Mutex{}
 
-	twitEvent := make(chan *model.Twit, 1)
+	mu.Lock()
+	_, ok := users[id]
+	manager[id] = &listener{
+		twitChannel: result,
+	}
+	mu.Unlock()
+	if !ok {
+		return nil, errors.New("Sorry, we cant find user with this id")
+	}
+
 	go func() {
 		<-ctx.Done()
+		mu.Lock()
+		delete(twitPublishedChannel, id)
+		mu.Unlock()
 	}()
-	twitPublishedChannel[id] = twitEvent
-	return twitEvent, nil
+
+	return result, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
@@ -85,10 +101,27 @@ type subscriptionResolver struct{ *Resolver }
 //  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
-var users map[string]*model.User
+type listener struct {
+	twitChannel chan *model.Twit
+}
+
+var manager map[string]*listener
 var twitPublishedChannel map[string]chan *model.Twit
+var users map[string]*model.User
 
 func init() {
+	manager = map[string]*listener{}
 	twitPublishedChannel = map[string]chan *model.Twit{}
 	users = map[string]*model.User{}
+
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }

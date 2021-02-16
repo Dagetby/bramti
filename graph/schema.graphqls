@@ -8,7 +8,7 @@ type Twit {
     id: ID!
     contentText: String!
     publicationDate: Time!
-    authorId: User!
+    author: User!
 }
 
 type Subscription {
