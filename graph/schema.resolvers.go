@@ -6,8 +6,7 @@ package graph
 import (
 	"context"
 	"errors"
-	"math/rand"
-	"sync"
+	"github.com/Dagetby/bramti/graph/utils"
 	"time"
 
 	"github.com/Dagetby/bramti/graph/generated"
@@ -15,41 +14,45 @@ import (
 )
 
 func (r *mutationResolver) CreateTwit(ctx context.Context, input model.NewTwit) (*model.Twit, error) {
-	if _, ok := users[input.UserID]; !ok {
-		newUser := &model.User{
-			ID:   input.UserID,
-			Name: RandStringRunes(7),
-		}
-		users[input.UserID] = newUser
+	user, ok := r.checkUser(input.UserID)
+	if !ok {
+		return nil, errors.New("We don't have user with this Id\n Please create new user")
 	}
-	user := users[input.UserID]
+
 	newTwit := &model.Twit{
-		ID:              RandStringRunes(5),
+		ID:              utils.RandStringRunes(5),
 		ContentText:     input.ContextText,
 		PublicationDate: time.Now(),
 		Author:          user,
 	}
-
 	user.Twits = append(user.Twits, newTwit)
-	if m, ok := manager[input.UserID]; ok {
-		m.twitChannel <- newTwit
-	}
 
+	m, ok := r.checkListener(input.UserID)
+	if ok {
+		m <- newTwit
+	}
 	return newTwit, nil
 }
 
-func (r *queryResolver) Twits(ctx context.Context, id string, limit *int, offset *int) ([]*model.Twit, error) {
-	var result []*model.Twit
-	var allTodos = users[id].Twits
+func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
+	return r.addUser(&model.User{
+		ID:   input.UserID,
+		Name: input.Name,
+	}), nil
+}
 
-	result = allTodos
+func (r *queryResolver) Twits(ctx context.Context, id string, limit *int, offset *int) ([]*model.Twit, error) {
+	result, err := r.getTwits(id)
+	if err != nil {
+		return nil, err
+	}
 
 	if limit != nil && offset != nil {
 		start := *offset
 		end := *limit + *offset
 
-		if end > len(allTodos) {
-			end = len(allTodos)
+		if end > len(result) {
+			end = len(result)
 		}
 
 		return result[start:end], nil
@@ -59,24 +62,16 @@ func (r *queryResolver) Twits(ctx context.Context, id string, limit *int, offset
 }
 
 func (r *subscriptionResolver) TwitPublished(ctx context.Context, id string) (<-chan *model.Twit, error) {
-	result := make(chan *model.Twit, 1)
-	mu := &sync.Mutex{}
-
-	mu.Lock()
-	_, ok := users[id]
-	manager[id] = &listener{
-		twitChannel: result,
-	}
-	mu.Unlock()
+	_, ok := r.checkUser(id)
 	if !ok {
 		return nil, errors.New("Sorry, we cant find user with this id")
 	}
-
+	result := r.addListener(id)
 	go func() {
 		<-ctx.Done()
-		mu.Lock()
-		delete(twitPublishedChannel, id)
-		mu.Unlock()
+		r.mu.Lock()
+		delete(r.listener, id)
+		r.mu.Unlock()
 	}()
 
 	return result, nil
@@ -94,34 +89,3 @@ func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subsc
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-type listener struct {
-	twitChannel chan *model.Twit
-}
-
-var manager map[string]*listener
-var twitPublishedChannel map[string]chan *model.Twit
-var users map[string]*model.User
-
-func init() {
-	manager = map[string]*listener{}
-	twitPublishedChannel = map[string]chan *model.Twit{}
-	users = map[string]*model.User{}
-
-}
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func RandStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
-}

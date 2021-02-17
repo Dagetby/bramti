@@ -20,8 +20,14 @@ input NewTwit {
     userId: ID!
 }
 
+input NewUser {
+    userId: ID!
+    name: String!
+}
+
 type Mutation {
     createTwit(input: NewTwit!): Twit!
+    createUser(input: NewUser!): User!
 }
 
 type Query {
