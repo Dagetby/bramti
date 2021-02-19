@@ -15,7 +15,7 @@ type Resolver struct {
 	twits    []*model.Twit
 	listener map[string]chan *model.Twit
 	users    map[string]*model.User
-	mu       *sync.Mutex
+	mu       *sync.RWMutex
 }
 
 func NewResolver() *Resolver {
@@ -24,14 +24,14 @@ func NewResolver() *Resolver {
 		twits:    make([]*model.Twit, 0),
 		listener: map[string]chan *model.Twit{},
 		users:    map[string]*model.User{},
-		mu:       &sync.Mutex{},
+		mu:       &sync.RWMutex{},
 	}
 }
 
 func (r *Resolver) checkUser(id string) (*model.User, bool) {
-	r.mu.Lock()
+	r.mu.RLock()
 	user, ok := r.users[id]
-	r.mu.Unlock()
+	r.mu.RUnlock()
 	if ok {
 		return user, true
 	}
@@ -54,9 +54,9 @@ func (r *Resolver) addListener(id string) chan *model.Twit {
 }
 
 func (r *Resolver) checkListener(id string) (chan *model.Twit, bool) {
-	r.mu.Lock()
+	r.mu.RLock()
 	l, ok := r.listener[id]
-	r.mu.Unlock()
+	r.mu.RUnlock()
 	if ok {
 		return l, true
 	}
@@ -64,9 +64,9 @@ func (r *Resolver) checkListener(id string) (chan *model.Twit, bool) {
 }
 
 func (r *Resolver) getTwits(id string) ([]*model.Twit, error) {
-	r.mu.Lock()
+	r.mu.RLock()
 	user, ok := r.users[id]
-	r.mu.Unlock()
+	r.mu.RUnlock()
 	if !ok {
 		return nil, errors.New("We don't have user with this ID")
 	}
