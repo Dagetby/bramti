@@ -11,6 +11,11 @@ type NewTwit struct {
 	UserID      string `json:"userId"`
 }
 
+type NewUser struct {
+	UserID string `json:"userId"`
+	Name   string `json:"name"`
+}
+
 type Twit struct {
 	ID              string    `json:"id"`
 	ContentText     string    `json:"contentText"`
